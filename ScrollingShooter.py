@@ -20,18 +20,30 @@ gameGravity = 0.75
 #Input variables
 moveLeft = False
 moveRight = False
+shootGun = False
 
-#Set background colour and function to add background to the game screen
-BGColour = (100, 130, 100)
-REDColour = (255, 0, 0)
-def createBackground():
-    screen.fill(BGColour)
-    pygame.draw.line(screen, REDColour, (0, 500), (SCREEN_WIDTH, 500))
+#Bullet Image
+bulletImage = pygame.image.load(f'assets/bullet.png')
+
+#Set background image and function to add ground to game
+backGroundImage = pygame.image.load(f'Assets/Background.png')
+backGroundImage = pygame.transform.scale(backGroundImage, (int(backGroundImage.get_width() * 2), (int(backGroundImage.get_height() * 2))))
+floorPlatform = pygame.image.load(f'Assets/ShooterPlatform.png')
+floorPlatform = pygame.transform.scale(floorPlatform, (int(floorPlatform.get_width() / 1.25), (int(floorPlatform.get_height() / 1.25))))
+ColourBlack = (0, 0, 0)
+def createFloor():
+    pygame.draw.line(screen, ColourBlack, (0, 500), (SCREEN_WIDTH, 500))
+    screen.blit(floorPlatform, (0, 500))
+
+
 
 #Player Class
 class PlayerCharacter(pygame.sprite.Sprite):
     def __init__(self, x, y, scale, movespeed):
         self.playerIsAlive = True
+        self.health = 100
+        self.maximumHealth = self.health
+        self.shootCooldown = 0
         self.movespeed = movespeed
         self.movedirection = 1
         self.isJumping = False
@@ -46,24 +58,25 @@ class PlayerCharacter(pygame.sprite.Sprite):
         #Idle Animation
         holding_list = []
         for i in range(4):
-            img = pygame.image.load(f'assets/PlayerIdle/Player_Idle_{i}.png')  #Assign the player's sprite an image based on animation playing
+            img = pygame.image.load(f'assets/PlayerIdle/Player_Idle_{i}.png').convert_alpha()  #Assign the player's sprite an image based on animation playing
             img = pygame.transform.scale(img, (int(img.get_width() * scale), (int(img.get_height() * scale)))) #Change image size
             holding_list.append(img)
         self.animationList.append(holding_list)
         #Running Animation
         holding_list = []
         for i in range(8):
-            img = pygame.image.load(f'assets/PlayerRun/Player_Run_{i}.png')  #Assign the player's sprite an image based on animation playing
+            img = pygame.image.load(f'assets/PlayerRun/Player_Run_{i}.png').convert_alpha()  #Assign the player's sprite an image based on animation playing
             img = pygame.transform.scale(img, (int(img.get_width() * scale), (int(img.get_height() * scale)))) #Change image size
             holding_list.append(img)
         self.animationList.append(holding_list)
         #Jumping Animation
         holding_list= []
         for i in range(4):
-            img = pygame.image.load(f'assets/PlayerJump/Player_Jump_{i}.png')  # Assign the player's sprite an image based on animation playing
+            img = pygame.image.load(f'assets/PlayerJump/Player_Jump_{i}.png').convert_alpha()  # Assign the player's sprite an image based on animation playing
             img = pygame.transform.scale(img, (int(img.get_width() * scale), (int(img.get_height() * scale))))  # Change image size
             holding_list.append(img)
         self.animationList.append(holding_list)
+
         self.image = self.animationList[self.currentPlayerAction][self.animationIndex]
         self.rect = self.image.get_rect()
         self.rect.center = (x, y)
@@ -83,6 +96,18 @@ class PlayerCharacter(pygame.sprite.Sprite):
         if self.animationIndex >= len(self.animationList[self.currentPlayerAction]):      #Once the index reaches the length of the list...
             self.animationIndex = 0     #Reset the animation index to reset the animation
 
+    def update(self):
+        self.handleAnimations()
+        if self.shootCooldown > 0:
+            self.shootCooldown -= 1
+
+    def playerShoot(self):
+        if self.shootCooldown == 0:
+            self.shootCooldown = 20
+            bullet = Bullet(playerModel.rect.centerx + (0.9 * playerModel.rect.size[0] * playerModel.movedirection),
+                            playerModel.rect.centery - (0.4 * playerModel.rect.size[0]), playerModel.movedirection)
+            bulletSpriteGroup.add(bullet)
+
     #Change player action based on game state eg. running
     def definePlayerAction(self, newAction):        #Tells animation code which animation should be played when
         if newAction != self.currentPlayerAction:
@@ -97,11 +122,11 @@ class PlayerCharacter(pygame.sprite.Sprite):
         if moveLeft:
             twox = -self.movespeed
             self.directionChange = True
-            self.direction = -1
+            self.movedirection = -1
         if moveRight:                           #Detects when the player is moving left to notify the game on when to flip the sprite
             twox = self.movespeed
             self.directionChange = False
-            self.direction = 1
+            self.movedirection = 1
         if self.isJumping == True and self.isAirborne == False:
             self.yVelocity = -11                #Detects when the player is jumping and changes yVelocity when it does so
             self.isJumping = False
@@ -117,27 +142,47 @@ class PlayerCharacter(pygame.sprite.Sprite):
         self.rect.x += twox
         self.rect.y += twoy
 
+class Enemies(pygame.sprite.Sprite):
+    def __init__(self, x, y, scale, movespeed):
+        self.isAlive = True
 
+#Bullet Class
+class Bullet(pygame.sprite.Sprite):
+    def __init__(self, x, y, direction):
+        pygame.sprite.Sprite.__init__(self)
+        self.bulletSpeed = 5
+        self.image = bulletImage
+        self.rect = self.image.get_rect()
+        self.rect.center = (x, y)
+        self.direction = direction
+    def update(self):
+        #Move bullet
+        self.rect.x += (self.direction * self.bulletSpeed)
+        if self.rect.right < 0 or self.rect.left > SCREEN_WIDTH:
+            self.kill()
 
+bulletSpriteGroup = pygame.sprite.Group()
 
 #Create player
 playerModel = PlayerCharacter(200, 200, 2, 5)
-
-
-
 
 #Game Loop
 run = True
 while run:
     #Game Initializations
+    screen.blit(backGroundImage, (0, 0))
     clock.tick(FrameRate)
-    createBackground()
-    playerModel.handleAnimations()
+    createFloor()
+    playerModel.update()
     playerModel.createPlayer()
+    bulletSpriteGroup.update()
+    bulletSpriteGroup.draw(screen)
 
     if playerModel.playerIsAlive:
+        if shootGun:
+            playerModel.playerShoot()
         if playerModel.isAirborne:
-            playerModel.definePlayerAction(2)   #Player is moving
+            playerModel.definePlayerAction(2)   #Player is jumping
         elif moveLeft or moveRight:
             playerModel.definePlayerAction(1)   #Player is moving
         else:
@@ -155,8 +200,10 @@ while run:
                 moveLeft = True
             if event.key == pygame.K_d:     #Move right
                 moveRight = True
-            if event.key == pygame.K_w and playerModel.playerIsAlive:
+            if event.key == pygame.K_w and playerModel.playerIsAlive:       #Player Jumping
                 playerModel.isJumping = True
+            if event.key == pygame.K_SPACE:
+                shootGun = True
             if event.key == pygame.K_ESCAPE:    #Close the game
                 run = False
         #Stop Movements
@@ -165,6 +212,8 @@ while run:
                 moveLeft = False
             if event.key == pygame.K_d:     #Stop right movement
                 moveRight = False
+            if event.key == pygame.K_SPACE:
+                shootGun = False
 
     #Keep game display updated with new information
     pygame.display.update()

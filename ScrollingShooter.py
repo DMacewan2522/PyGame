@@ -25,21 +25,19 @@ shootGun = False
 #Bullet Image
 bulletImage = pygame.image.load(f'assets/bullet.png')
 
-#Set background image and function to add ground to game
+#Set background image, floor image, and function to add ground to game
 backGroundImage = pygame.image.load(f'Assets/Background.png')
-backGroundImage = pygame.transform.scale(backGroundImage, (int(backGroundImage.get_width() * 2), (int(backGroundImage.get_height() * 2))))
+backGroundImage = pygame.transform.scale(backGroundImage, (int(backGroundImage.get_width() * 2), (int(backGroundImage.get_height() * 2))))  #Scale background
 floorPlatform = pygame.image.load(f'Assets/ShooterPlatform.png')
-floorPlatform = pygame.transform.scale(floorPlatform, (int(floorPlatform.get_width() / 1.25), (int(floorPlatform.get_height() / 1.25))))
-ColourBlack = (0, 0, 0)
+floorPlatform = pygame.transform.scale(floorPlatform, (int(floorPlatform.get_width() / 1.25), (int(floorPlatform.get_height() / 1.25))))    #Scale platform
 def createFloor():
-    pygame.draw.line(screen, ColourBlack, (0, 500), (SCREEN_WIDTH, 500))
-    screen.blit(floorPlatform, (0, 500))
-
-
+    pygame.draw.line(screen, (0, 0, 0), (0, 500), (SCREEN_WIDTH, 500))  #Draw floor
+    screen.blit(floorPlatform, (0, 500))    #Create platform asset
 
 #Player Class
 class PlayerCharacter(pygame.sprite.Sprite):
     def __init__(self, x, y, scale, movespeed):
+        #Class variables
         self.playerIsAlive = True
         self.health = 100
         self.maximumHealth = self.health
@@ -96,16 +94,20 @@ class PlayerCharacter(pygame.sprite.Sprite):
         if self.animationIndex >= len(self.animationList[self.currentPlayerAction]):      #Once the index reaches the length of the list...
             self.animationIndex = 0     #Reset the animation index to reset the animation
 
+    #Update function to call animation handling and countdown shooting cooldown
     def update(self):
         self.handleAnimations()
         if self.shootCooldown > 0:
             self.shootCooldown -= 1
 
+    #Called to allow the player to shoot their gun
     def playerShoot(self):
-        if self.shootCooldown == 0:
-            self.shootCooldown = 20
+        if self.shootCooldown == 0: #If cooldown is 0
+            self.shootCooldown = 20 #Reset cooldown
+            #Create bullet
             bullet = Bullet(playerModel.rect.centerx + (0.9 * playerModel.rect.size[0] * playerModel.movedirection),
                             playerModel.rect.centery - (0.4 * playerModel.rect.size[0]), playerModel.movedirection)
+            #Add bullet to sprite group
             bulletSpriteGroup.add(bullet)
 
     #Change player action based on game state eg. running
@@ -119,11 +121,11 @@ class PlayerCharacter(pygame.sprite.Sprite):
     def playerMovement(self, moveLeft, moveRight):
         twox = 0
         twoy = 0
-        if moveLeft:
+        if moveLeft:                            #Detects when the player is moving left and notify the game on when to flip the sprite
             twox = -self.movespeed
             self.directionChange = True
             self.movedirection = -1
-        if moveRight:                           #Detects when the player is moving left to notify the game on when to flip the sprite
+        if moveRight:                           #Detects when the player is moving right and notify the game on when to flip the sprite
             twox = self.movespeed
             self.directionChange = False
             self.movedirection = 1
@@ -133,9 +135,9 @@ class PlayerCharacter(pygame.sprite.Sprite):
             self.isAirborne = True
         #Gravity
         self.yVelocity += gameGravity
-        twoy += self.yVelocity                  #Changes twoy coordinate based on yVelocity
+        twoy += self.yVelocity                  #Changes twoy coordinate based on yVelocity (Creates gravity)
         if self.rect.bottom + twoy > 500:
-            twoy = 500 - self.rect.bottom
+            twoy = 500 - self.rect.bottom       #Stops player from falling through the ground
             self.isAirborne = False
         #Border Collision
         if self.rect.left + twox < 0:
@@ -149,6 +151,7 @@ class PlayerCharacter(pygame.sprite.Sprite):
 
 class Enemies(pygame.sprite.Sprite):
     def __init__(self, x, y, direction):
+        #Class variables
         pygame.sprite.Sprite.__init__(self)
         self.isAlive = True
         self.enemySpeed = 3
@@ -158,42 +161,47 @@ class Enemies(pygame.sprite.Sprite):
         self.rect.center = (x, y)
         self.direction = direction
         self.spawnCooldown = 20
+    #Update function to move enemy and detect if it has left the game screen
     def update(self):
         self.rect.x += (self.direction * self.enemySpeed)
         if self.rect.right < 0 or self.rect.left > SCREEN_WIDTH:
             self.kill()
+    #Create enemy
     def spawnEnemy(self):
         enemySpriteGroup.add(enemy)
 
+#Create sprite group
 enemySpriteGroup = pygame.sprite.Group()
 
 #Bullet Class
 class Bullet(pygame.sprite.Sprite):
     def __init__(self, x, y, direction):
+        #Class variables
         pygame.sprite.Sprite.__init__(self)
         self.bulletSpeed = 5
         self.image = bulletImage
         self.rect = self.image.get_rect()
         self.rect.center = (x, y)
         self.direction = direction
+    #Update function to move bullet and detect if it has left the game screen
     def update(self):
-        #Move bullet
         self.rect.x += (self.direction * self.bulletSpeed)
         if self.rect.right < 0 or self.rect.left > SCREEN_WIDTH:
             self.kill()
 
+#Create sprite group
 bulletSpriteGroup = pygame.sprite.Group()
 
+#Collision detection
 def DetectCollisions():
-    if enemy.rect.colliderect(playerModel.rect):
+    if enemy.rect.colliderect(playerModel.rect):    #Remove player health when an enemy collides with them
         playerModel.health -= 0.5
-    if pygame.sprite.spritecollide(bullet and enemy, bulletSpriteGroup, False):
+    if pygame.sprite.spritecollide(bullet and enemy, bulletSpriteGroup, False):     #Destroy bullets and enemies when the two collide
         enemySpriteGroup.empty()
         bulletSpriteGroup.empty()
 
-#Create player
+#Create objects
 playerModel = PlayerCharacter(200, 200, 2, 5)
-
 enemy = Enemies(100, 100, 0)
 bullet = Bullet(0,0,0)
 
@@ -205,6 +213,7 @@ while run:
     clock.tick(FrameRate)
     createFloor()
     playerModel.createPlayer()
+    pygame.draw.rect(screen, (255, 0, 0), (10, 10, playerModel.health, 25))
     bulletSpriteGroup.update()
     bulletSpriteGroup.draw(screen)
     enemySpriteGroup.update()
@@ -212,21 +221,22 @@ while run:
     playerModel.update()
     DetectCollisions()
 
+    #Tick down spawn rate
     enemySpawnRate -= 1
-    if enemySpawnRate == 0:
-        tempRandomXSpawn = random.randint(0, 1)
+    if enemySpawnRate == 0:     #Spawn enemy when spawn rate equals 0
+        tempRandomXSpawn = random.randint(0, 1)     #Get 0 or 1 to randomize enemy spawn locations
         if tempRandomXSpawn == 0:
             enemy = Enemies(0, 440, 1)
-            enemy.spawnEnemy()
+            enemy.spawnEnemy()                      #If result is 0, spawn enemy on the left and set attributes
             enemySpawnRate = 300
         elif tempRandomXSpawn == 1:
             enemy = Enemies(800, 440, -1)
-            enemy.spawnEnemy()
+            enemy.spawnEnemy()                      #If result is 1, spawn enemy on the right and set attributes
             enemySpawnRate = 300
 
     if playerModel.playerIsAlive:
         if shootGun:
-            playerModel.playerShoot()
+            playerModel.playerShoot()       #Player is shooting
         if playerModel.isAirborne:
             playerModel.definePlayerAction(2)   #Player is jumping
         elif moveLeft or moveRight:
@@ -248,7 +258,7 @@ while run:
                 moveRight = True
             if event.key == pygame.K_w and playerModel.playerIsAlive:       #Player Jumping
                 playerModel.isJumping = True
-            if event.key == pygame.K_SPACE:
+            if event.key == pygame.K_SPACE:     #Player is shooting
                 shootGun = True
             if event.key == pygame.K_ESCAPE:    #Close the game
                 run = False
@@ -258,8 +268,12 @@ while run:
                 moveLeft = False
             if event.key == pygame.K_d:     #Stop right movement
                 moveRight = False
-            if event.key == pygame.K_SPACE:
+            if event.key == pygame.K_SPACE:     #Stop shooting
                 shootGun = False
+
+    #Terminates game loop if the player's health reaches 0
+    if playerModel.health == 0:
+        run = False
 
     #Keep game display updated with new information
     pygame.display.update()

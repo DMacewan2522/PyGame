@@ -16,6 +16,10 @@ FrameRate = 90
 #Game Variables
 gameGravity = 0.75
 enemySpawnRate = 300
+gameFont = pygame.font.SysFont("arial", 30) #Game Font
+controlsText = gameFont.render("Left = A, Right = D, Jump = W, Shoot = Spacebar", True, (0,0,0))    #Control Text
+gamePoints = 0
+pointsText = gameFont.render("Score = " +str(gamePoints), True, (0,0,0)) #Game Text
 
 #Input variables
 moveLeft = False
@@ -192,13 +196,9 @@ class Bullet(pygame.sprite.Sprite):
 #Create sprite group
 bulletSpriteGroup = pygame.sprite.Group()
 
-#Collision detection
-def DetectCollisions():
-    if enemy.rect.colliderect(playerModel.rect):    #Remove player health when an enemy collides with them
-        playerModel.health -= 0.5
-    if pygame.sprite.spritecollide(bullet and enemy, bulletSpriteGroup, False):     #Destroy bullets and enemies when the two collide
-        enemySpriteGroup.empty()
-        bulletSpriteGroup.empty()
+def showScore():
+    pointsText = gameFont.render("Score = " + str(gamePoints), True, (0, 0, 0))
+    screen.blit(pointsText, (10, 40))
 
 #Create objects
 playerModel = PlayerCharacter(200, 200, 2, 5)
@@ -214,12 +214,20 @@ while run:
     createFloor()
     playerModel.createPlayer()
     pygame.draw.rect(screen, (255, 0, 0), (10, 10, playerModel.health, 25))
+    screen.blit(controlsText, (120, 5))
     bulletSpriteGroup.update()
     bulletSpriteGroup.draw(screen)
     enemySpriteGroup.update()
     enemySpriteGroup.draw(screen)
     playerModel.update()
-    DetectCollisions()
+    if enemy.rect.colliderect(playerModel.rect):  # Remove player health when an enemy collides with them
+        playerModel.health -= 0.5
+    if pygame.sprite.spritecollide(bullet and enemy, bulletSpriteGroup,False):
+        enemySpriteGroup.empty()    # Destroy bullets and enemies when the two collide
+        bulletSpriteGroup.empty()
+        gamePoints += 1
+    showScore()
+
 
     #Tick down spawn rate
     enemySpawnRate -= 1
@@ -228,11 +236,10 @@ while run:
         if tempRandomXSpawn == 0:
             enemy = Enemies(0, 440, 1)
             enemy.spawnEnemy()                      #If result is 0, spawn enemy on the left and set attributes
-            enemySpawnRate = 300
         elif tempRandomXSpawn == 1:
             enemy = Enemies(800, 440, -1)
             enemy.spawnEnemy()                      #If result is 1, spawn enemy on the right and set attributes
-            enemySpawnRate = 300
+        enemySpawnRate = 300
 
     if playerModel.playerIsAlive:
         if shootGun:

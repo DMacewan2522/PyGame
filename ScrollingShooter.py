@@ -184,10 +184,18 @@ class Bullet(pygame.sprite.Sprite):
 
 bulletSpriteGroup = pygame.sprite.Group()
 
+def DetectCollisions():
+    if enemy.rect.colliderect(playerModel.rect):
+        playerModel.health -= 0.5
+    if pygame.sprite.spritecollide(bullet and enemy, bulletSpriteGroup, False):
+        enemySpriteGroup.empty()
+        bulletSpriteGroup.empty()
+
 #Create player
 playerModel = PlayerCharacter(200, 200, 2, 5)
 
 enemy = Enemies(100, 100, 0)
+bullet = Bullet(0,0,0)
 
 #Game Loop
 run = True
@@ -202,6 +210,7 @@ while run:
     enemySpriteGroup.update()
     enemySpriteGroup.draw(screen)
     playerModel.update()
+    DetectCollisions()
 
     enemySpawnRate -= 1
     if enemySpawnRate == 0:

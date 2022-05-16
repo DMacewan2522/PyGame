@@ -1,3 +1,10 @@
+#Github Repository = https://github.com/DMacewan2522/PyGame
+
+#Assets Used
+#https://poohcom1.itch.io/soldier-girl-sprite-pack
+#https://craftpix.net/freebies/free-drones-pack-pixel-art/
+#https://craftpix.net/freebies/free-industrial-zone-tileset-pixel-art/
+
 import pygame, sys, random         #Initialize Libraries
 pygame.init()
 

@@ -1,5 +1,4 @@
-import pygame, sys
-    #Initialize PyGame
+import pygame, sys, random         #Initialize Libraries
 pygame.init()
 
 #Set screen height and width
@@ -16,6 +15,7 @@ FrameRate = 90
 
 #Game Variables
 gameGravity = 0.75
+enemySpawnRate = 300
 
 #Input variables
 moveLeft = False
@@ -137,14 +137,35 @@ class PlayerCharacter(pygame.sprite.Sprite):
         if self.rect.bottom + twoy > 500:
             twoy = 500 - self.rect.bottom
             self.isAirborne = False
+        #Border Collision
+        if self.rect.left + twox < 0:
+            twox = 0  -self.rect.left
+        if self.rect.right + twox > SCREEN_WIDTH:
+            twox = SCREEN_WIDTH -self.rect.right
 
         #Update position of player rectangle
         self.rect.x += twox
         self.rect.y += twoy
 
 class Enemies(pygame.sprite.Sprite):
-    def __init__(self, x, y, scale, movespeed):
+    def __init__(self, x, y, direction):
+        pygame.sprite.Sprite.__init__(self)
         self.isAlive = True
+        self.enemySpeed = 3
+        self.yVelocity = 0
+        self.image = pygame.image.load(f'Assets/Drone_Fly.png')
+        self.rect = self.image.get_rect()
+        self.rect.center = (x, y)
+        self.direction = direction
+        self.spawnCooldown = 20
+    def update(self):
+        self.rect.x += (self.direction * self.enemySpeed)
+        if self.rect.right < 0 or self.rect.left > SCREEN_WIDTH:
+            self.kill()
+    def spawnEnemy(self):
+        enemySpriteGroup.add(enemy)
+
+enemySpriteGroup = pygame.sprite.Group()
 
 #Bullet Class
 class Bullet(pygame.sprite.Sprite):
@@ -166,6 +187,8 @@ bulletSpriteGroup = pygame.sprite.Group()
 #Create player
 playerModel = PlayerCharacter(200, 200, 2, 5)
 
+enemy = Enemies(100, 100, 0)
+
 #Game Loop
 run = True
 while run:
@@ -173,10 +196,24 @@ while run:
     screen.blit(backGroundImage, (0, 0))
     clock.tick(FrameRate)
     createFloor()
-    playerModel.update()
     playerModel.createPlayer()
     bulletSpriteGroup.update()
     bulletSpriteGroup.draw(screen)
+    enemySpriteGroup.update()
+    enemySpriteGroup.draw(screen)
+    playerModel.update()
+
+    enemySpawnRate -= 1
+    if enemySpawnRate == 0:
+        tempRandomXSpawn = random.randint(0, 1)
+        if tempRandomXSpawn == 0:
+            enemy = Enemies(0, 440, 1)
+            enemy.spawnEnemy()
+            enemySpawnRate = 300
+        elif tempRandomXSpawn == 1:
+            enemy = Enemies(800, 440, -1)
+            enemy.spawnEnemy()
+            enemySpawnRate = 300
 
     if playerModel.playerIsAlive:
         if shootGun:
